@@ -1,12 +1,26 @@
 from __future__ import annotations
 
+import csv
+import io
 import sqlite3
-from datetime import date
+from datetime import date, datetime
+
+from pydantic import ValidationError
 
 from app.categories import age_category
-from app.errors import ConflictError
+from app.errors import ApiError, ConflictError
 from app.repositories.common import fetch_or_404
-from app.schemas import AthleteCreate, AthleteOut
+from app.schemas import AthleteCreate, AthleteOut, ImportLineError, ImportReport
+
+IMPORT_COLUMNS = (
+    "nom",
+    "prenom",
+    "date_naissance",
+    "sexe",
+    "club",
+    "licence",
+    "certificat_valide_jusqu",
+)
 
 
 def _to_athlete(row: sqlite3.Row) -> AthleteOut:
@@ -68,3 +82,52 @@ def create_athlete(conn: sqlite3.Connection, data: AthleteCreate) -> AthleteOut:
     )
     row = conn.execute("SELECT * FROM athletes WHERE id = ?", (cursor.lastrowid,)).fetchone()
     return _to_athlete(row)
+
+
+def _parse_fr_date(value: str) -> date:
+    return datetime.strptime(value, "%d/%m/%Y").date()
+
+
+def _row_to_create(row: dict[str, str]) -> AthleteCreate:
+    certificate = (row["certificat_valide_jusqu"] or "").strip()
+    return AthleteCreate(
+        last_name=(row["nom"] or "").strip(),
+        first_name=(row["prenom"] or "").strip(),
+        birth_date=_parse_fr_date((row["date_naissance"] or "").strip()),
+        sex=(row["sexe"] or "").strip(),
+        club=(row["club"] or "").strip() or None,
+        license_number=(row["licence"] or "").strip(),
+        medical_certificate_valid_until=_parse_fr_date(certificate) if certificate else None,
+    )
+
+
+def import_athletes(conn: sqlite3.Connection, content: str) -> ImportReport:
+    reader = csv.DictReader(io.StringIO(content), delimiter=";")
+    missing = [c for c in IMPORT_COLUMNS if c not in (reader.fieldnames or [])]
+    if missing:
+        raise ApiError(f"Colonnes manquantes : {', '.join(missing)}", code="invalid_csv")
+
+    created = 0
+    skipped = 0
+    errors: list[ImportLineError] = []
+    for row in reader:
+        line = reader.line_num
+        try:
+            data = _row_to_create(row)
+        except ValidationError as exc:
+            detail = "; ".join(f"{'.'.join(map(str, e['loc']))} : {e['msg']}" for e in exc.errors())
+            errors.append(ImportLineError(line=line, message=detail))
+            continue
+        except ValueError as exc:
+            errors.append(ImportLineError(line=line, message=f"Date invalide : {exc}"))
+            continue
+
+        exists = conn.execute(
+            "SELECT 1 FROM athletes WHERE license_number = ?", (data.license_number,)
+        ).fetchone()
+        if exists is not None:
+            skipped += 1
+            continue
+        create_athlete(conn, data)
+        created += 1
+    return ImportReport(created=created, skipped=skipped, errors=errors)

@@ -1,4 +1,5 @@
 from datetime import date
+from pathlib import Path
 
 
 def test_create_athlete_returns_201_with_category(client):
@@ -72,3 +73,47 @@ def test_get_athlete_invalid_id_returns_422(client):
     response = client.get("/athletes/abc")
 
     assert response.status_code == 422
+
+
+CSV_EXEMPLE = Path(__file__).parent.parent / "scripts" / "legacy" / "licencies_exemple.csv"
+
+
+def _import_csv(client, content: bytes):
+    return client.post("/athletes/import", content=content, headers={"Content-Type": "text/csv"})
+
+
+def test_import_licencies_exemple(client):
+    response = _import_csv(client, CSV_EXEMPLE.read_bytes())
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["created"] == 17
+    assert body["skipped"] == 1
+    assert [e["line"] for e in body["errors"]] == [15, 16]
+    assert len(client.get("/athletes").json()) == 17
+
+
+def test_import_licencies_reimport(client):
+    content = CSV_EXEMPLE.read_bytes()
+    first = _import_csv(client, content).json()
+
+    body = _import_csv(client, content).json()
+
+    assert body["created"] == 0
+    assert body["skipped"] == 18
+    assert body["errors"] == first["errors"]
+    assert len(client.get("/athletes").json()) == 17
+
+
+def test_import_rejects_wrong_content_type(client):
+    response = client.post("/athletes/import", content=b"x", headers={"Content-Type": "text/plain"})
+
+    assert response.status_code == 400
+    assert response.json()["error"]["code"] == "unsupported_media_type"
+
+
+def test_import_rejects_missing_columns(client):
+    response = _import_csv(client, b"nom;prenom\nDurand;Luc\n")
+
+    assert response.status_code == 400
+    assert response.json()["error"]["code"] == "invalid_csv"
