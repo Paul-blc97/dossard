@@ -1,3 +1,6 @@
+import csv
+import io
+
 import pytest
 
 
@@ -48,3 +51,22 @@ def test_ranking_unknown_event_returns_404(client):
 
     assert response.status_code == 404
     assert response.json()["error"]["code"] == "not_found"
+
+
+def test_export_csv_club_with_comma_keeps_columns(
+    client, make_competition, make_event, make_athlete, make_registration
+):
+    competition = make_competition(status="open")
+    event = make_event(competition["id"], unit="time_s")
+    athlete = make_athlete("Durand", club="AC Paris, section Sud")
+    registration = make_registration(event["id"], athlete["id"])
+    client.patch(f"/competitions/{competition['id']}", json={"status": "closed"})
+    client.put(f"/registrations/{registration['id']}/result", json={"performance": 11.9})
+
+    response = client.get(f"/competitions/{competition['id']}/results.csv")
+
+    assert response.status_code == 200
+    rows = list(csv.reader(io.StringIO(response.text)))
+    record = dict(zip(rows[0], rows[1], strict=True))
+    assert record["club"] == "AC Paris, section Sud"
+    assert record["performance"] == "11.9"
