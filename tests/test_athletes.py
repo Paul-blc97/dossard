@@ -47,3 +47,28 @@ def test_list_athletes_filters_by_club(client, make_athlete):
 
     assert response.status_code == 200
     assert [a["last_name"] for a in response.json()] == ["Durand"]
+
+
+def test_get_athlete_returns_detail(client, make_athlete):
+    athlete = make_athlete("Durand")
+
+    response = client.get(f"/athletes/{athlete['id']}")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["id"] == athlete["id"]
+    assert body["last_name"] == "Durand"
+    assert "category" in body
+
+
+def test_get_athlete_unknown_returns_404(client):
+    response = client.get("/athletes/9999")
+
+    assert response.status_code == 404
+    assert response.json()["error"]["code"] == "not_found"
+
+
+def test_get_athlete_invalid_id_returns_422(client):
+    response = client.get("/athletes/abc")
+
+    assert response.status_code == 422
