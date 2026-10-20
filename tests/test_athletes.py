@@ -50,6 +50,59 @@ def test_list_athletes_filters_by_club(client, make_athlete):
     assert [a["last_name"] for a in response.json()] == ["Durand"]
 
 
+def test_list_athletes_pagination_defaults(client, make_athlete):
+    for i in range(55):
+        make_athlete(f"Nom{i:02d}")
+
+    response = client.get("/athletes")
+
+    assert response.status_code == 200
+    assert len(response.json()) == 50
+
+
+def test_list_athletes_limit_and_offset(client, make_athlete):
+    for name in ("Adam", "Blanc", "Colin", "Dupuis"):
+        make_athlete(name)
+
+    response = client.get("/athletes", params={"limit": 2, "offset": 1})
+
+    assert [a["last_name"] for a in response.json()] == ["Blanc", "Colin"]
+
+
+def test_list_athletes_offset_beyond_end_returns_empty_list(client, make_athlete):
+    make_athlete("Adam")
+
+    response = client.get("/athletes", params={"offset": 10})
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_list_athletes_pagination_applies_after_club_filter(client, make_athlete):
+    make_athlete("Adam", club="Stade Nordval")
+    for name in ("Blanc", "Colin", "Dupuis"):
+        make_athlete(name, club="AC Rivebelle")
+
+    response = client.get("/athletes", params={"club": "AC Rivebelle", "limit": 2, "offset": 1})
+
+    assert [a["last_name"] for a in response.json()] == ["Colin", "Dupuis"]
+
+
+def test_list_athletes_accepts_bounds(client, make_athlete):
+    make_athlete("Adam")
+
+    assert client.get("/athletes", params={"limit": 1}).status_code == 200
+    assert client.get("/athletes", params={"limit": 100}).status_code == 200
+    assert client.get("/athletes", params={"offset": 0}).status_code == 200
+
+
+def test_list_athletes_rejects_out_of_range_values(client):
+    for params in ({"limit": 0}, {"limit": 101}, {"offset": -1}, {"limit": "abc"}):
+        response = client.get("/athletes", params=params)
+
+        assert response.status_code == 422, params
+
+
 def test_get_athlete_returns_detail(client, make_athlete):
     athlete = make_athlete("Durand")
 
