@@ -1,7 +1,5 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 Dossard : API de gestion de compétitions sportives (FastAPI + SQLite + pytest), projet fil rouge d'une formation Claude Code. Le code, les commentaires, les docstrings et les messages d'erreur sont en français : suivre cette langue.
 
 ## Commandes
@@ -29,7 +27,6 @@ Trois couches, un module par entité (competitions, athletes, registrations, res
 
 `tests/conftest.py` : chaque test a sa propre base temporaire (jamais `data/dossard.db`) via `DOSSARD_DB`.
 
-- `pytest` doit être vert avant tout commit.
 - Réutiliser les fixtures `client`, `make_competition`, `make_event`, `make_athlete`, `make_registration` (créer les données via l'API, pas en base).
 - Un fichier de test par router.
 - Toujours tester les cas d'erreur : 404, 409, 422.
@@ -43,7 +40,7 @@ Trois couches, un module par entité (competitions, athletes, registrations, res
 - Pas de nouvelle dépendance sans demander.
 - Scripts annexes autonomes : `scripts/classement_html.py <event_id>` (page HTML via l'API en interne), `scripts/mcp_dossard.py` (serveur MCP stdio, stdlib seule, base en lecture seule `mode=ro`, vues publiques uniquement, pas de SQL libre), `scripts/recepteur_hooks.py` (récepteur local de hooks HTTP).
 - `CLAUDE.local.md` et `.claude/settings.local.json` sont personnels et ignorés par Git.
-- Ne jamais lire ni afficher .env : il contient des secrets.!echo ".env" >> .gitignore
+- Ne jamais lire ni afficher .env : il contient des secrets.
 
 ## Écrire dans ce fichier
 
