@@ -1,0 +1,9 @@
+{
+  "name": "dossard-equipe",
+  "description": "Outils d'équipe pour Dossard : conventions d'API, hooks de garde, de formatage et de journalisation MCP, et serveur MCP des vues publiques.",
+  "version": "1.0.0",
+  "author": {
+    "name": "paulblache"
+  },
+  "license": "MIT"
+}
