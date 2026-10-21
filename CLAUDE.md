@@ -48,3 +48,7 @@ Trois couches, un module par entité (competitions, athletes, registrations, res
 - Une instruction = une ligne vérifiable (« lancer `pytest` » plutôt que « tester correctement »).
 - Des commandes exactes, pas des intentions.
 - Rien que Claude pourrait lire dans le code en 10 secondes.
+
+## Revue en CI
+
+Toute revue de pull request faite en CI se termine par la ligne exacte `Revue CI — relu par Claude`.
