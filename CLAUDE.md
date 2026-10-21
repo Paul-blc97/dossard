@@ -39,6 +39,7 @@ Trois couches, un module par entité (competitions, athletes, registrations, res
 - `scripts/legacy/` : lecture autorisée, aucune modification ni suppression sans demande explicite (exclu de ruff).
 - Pas de nouvelle dépendance sans demander.
 - Scripts annexes autonomes : `scripts/classement_html.py <event_id>` (page HTML via l'API en interne), `scripts/mcp_dossard.py` (serveur MCP stdio, stdlib seule, base en lecture seule `mode=ro`, vues publiques uniquement, pas de SQL libre), `scripts/recepteur_hooks.py` (récepteur local de hooks HTTP).
+- Les données d'exemple et de test sont synthétiques : aucune donnée personnelle réelle.
 - `CLAUDE.local.md` et `.claude/settings.local.json` sont personnels et ignorés par Git.
 - Ne jamais lire ni afficher .env : il contient des secrets.
 
