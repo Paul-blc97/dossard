@@ -2,6 +2,7 @@
 
 ## Non publié
 
+- `GET /events/{event_id}/ranking` : deux performances égales ont désormais le même rang et le rang suivant saute d'autant de places (1, 2, 2, 4).
 - Ajoute `GET /competitions/{competition_id}/stats` : nombre d'épreuves, d'inscriptions confirmées et de résultats (inscriptions confirmées seulement) de la compétition ; 404 si la compétition est introuvable.
 - `GET /competitions/{competition_id}/results.csv` : les champs contenant une virgule, un guillemet ou un saut de ligne (ex. nom de club) sont désormais entre guillemets, ce qui ne décale plus les colonnes.
 - `GET /events/{event_id}/ranking` : la réponse est désormais la liste nue des entrées (plus d'enveloppe `{"data", "count"}`) ; épreuve inconnue → 404 au format d'erreur standard. Routes des résultats : `summary=` en français et fonctions en snake_case.
